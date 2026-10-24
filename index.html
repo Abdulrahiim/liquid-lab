@@ -220,7 +220,8 @@ footer { color: var(--muted); font-size: 13px; }
   const DATA = JSON.parse(document.getElementById('weights').textContent);
   const $ = id => document.getElementById(id);
   function fit(cv) {
-    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = Number(cv.getAttribute('height'));
+    if (!cv._h0) cv._h0 = Number(cv.getAttribute('height'));
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv._h0;
     if (cv._w !== w || cv._d !== dpr) { cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.round(h * dpr); cv.style.height = h + 'px'; cv._w = w; cv._d = dpr; }
     const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h); return { ctx, w, h };
   }
@@ -392,6 +393,7 @@ footer { color: var(--muted); font-size: 13px; }
     lanes.forEach(([name, col, key, sc], i) => {
       const y0 = camH + i * (lh + gap), mid = y0 + lh / 2, kk = (lh - 24) / 2.3;
       const Y = v => mid - v * kk;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, y0, w, lh); ctx.clip();
       ctx.fillStyle = css('--sky'); ctx.fillRect(0, y0, w, lh);
       const trail = (arr, color, width, dash) => { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []); ctx.beginPath(); for (let k = k0; k <= k1; k += 5) { const px = X(k * HF), py = Y(arr[k]); k === k0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); } ctx.stroke(); ctx.setLineDash([]); };
       trail(S.y, css('--muted'), 2, [6, 5]);
@@ -403,9 +405,10 @@ footer { color: var(--muted); font-size: 13px; }
       drone(ctx, xNow, Y(z), css(col));
       const ok = Math.abs(z - yb) < SET.CATCH;
       ctx.font = '700 14px ' + css('--font-body'); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = ok ? css('--ok') : css('--bad'); ctx.fillText(ok ? 'catching' : 'missing', xNow + 44, Y(z));
+      ctx.fillStyle = ok ? css('--ok') : css('--bad'); const lx = xNow + 44 + 75 > w ? xNow - 40 : xNow + 44; ctx.textAlign = lx < xNow ? 'right' : 'left'; ctx.fillText(ok ? 'catching' : 'missing', lx, Math.max(y0 + 50, Math.min(y0 + lh - 12, Y(z)))); ctx.textAlign = 'left';
       ctx.fillStyle = css(col); ctx.font = '700 15px ' + css('--font-body'); ctx.textBaseline = 'top'; ctx.fillText(name, 10, y0 + 8);
       ctx.fillStyle = css('--ink-2'); ctx.font = '600 13px ' + css('--font-mono'); ctx.fillText(Math.round(S.r[sc]) + '% on target', 10, y0 + 28);
+      ctx.restore();
     });
     ctx.fillStyle = css('--muted'); ctx.font = '12px ' + css('--font-mono'); ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
     ctx.fillText(tt.toFixed(1) + ' s / ' + TEND + ' s', w - 10, h - 4);
